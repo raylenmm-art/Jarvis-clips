@@ -1,0 +1,27 @@
+name: make-clips
+on:
+  repository_dispatch:
+    types: [make-clips]
+  workflow_dispatch:
+    inputs:
+      count: { description: "How many clips", default: "5" }
+      theme: { description: "Optional theme", default: "" }
+permissions:
+  contents: write
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      NUM_CLIPS: ${{ github.event.client_payload.count || inputs.count || '5' }}
+      THEME: ${{ github.event.client_payload.theme || inputs.theme || '' }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - run: pip install -r requirements.txt
+      - run: python generate.py
+      - uses: actions/upload-artifact@v4
+        with: { name: clips, path: out/*.mp4 }
